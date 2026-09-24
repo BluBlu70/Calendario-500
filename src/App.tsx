@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { getAstrologicalData, generateTimeline } from './engine/astrology';
-import { Star, ShieldAlert, Sparkles, Moon, Sun, Info, BookOpen, AlertTriangle } from 'lucide-react';
+import { Star, ShieldAlert, Sparkles, Moon, Sun, Info, BookOpen, AlertTriangle, AlertCircle } from 'lucide-react';
 import { signData, daysOfWeek } from './engine/signData';
 
 function App() {
+  // Data confermata per i calcoli astrologici
   const [day, setDay] = useState(12);
   const [month, setMonth] = useState(4);
   const [year, setYear] = useState(1950);
+
+  // Campi di input testuali per digitazione libera
+  const [inputDay, setInputDay] = useState('12');
+  const [inputMonth, setInputMonth] = useState('4');
+  const [inputYear, setInputYear] = useState('1950');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Calcolo dell'età e del giorno
   const currentYear = new Date().getFullYear();
@@ -28,36 +35,41 @@ function App() {
   const capoStellaInfo = signData[astroData.capoStella];
   const etaStellaInfo = currentTimeline ? signData[currentTimeline.stella] : null;
 
-  // Calcolo giorni massimi per il mese/anno selezionati
-  const maxDaysInMonth = new Date(year, month, 0).getDate();
+  // Validazione ed esecuzione calcolo
+  const handleCalculate = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
-  // Handler sicuri per gli input
-  const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
-    if (!isNaN(val)) {
-      setDay(Math.max(1, Math.min(maxDaysInMonth, val)));
-    }
-  };
+    const d = parseInt(inputDay.trim(), 10);
+    const m = parseInt(inputMonth.trim(), 10);
+    const y = parseInt(inputYear.trim(), 10);
 
-  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
-    if (!isNaN(val)) {
-      const newMonth = Math.max(1, Math.min(12, val));
-      setMonth(newMonth);
-      // Aggiorna anche il giorno se il nuovo mese ha meno giorni (es. da 31 Gennaio a Febbraio -> diventa 28 Febbraio)
-      const newMaxDays = new Date(year, newMonth, 0).getDate();
-      if (day > newMaxDays) setDay(newMaxDays);
+    if (isNaN(d) || isNaN(m) || isNaN(y)) {
+      setErrorMessage("Inserisci valori numerici validi per giorno, mese e anno.");
+      return;
     }
-  };
 
-  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
-    if (!isNaN(val)) {
-      const newYear = Math.max(1, Math.min(currentYear + 100, val));
-      setYear(newYear);
-      const newMaxDays = new Date(newYear, month, 0).getDate();
-      if (day > newMaxDays) setDay(newMaxDays);
+    if (y < 1 || y > currentYear + 100) {
+      setErrorMessage(`L'anno deve essere compreso tra 1 e ${currentYear + 100}.`);
+      return;
     }
+
+    if (m < 1 || m > 12) {
+      setErrorMessage("Il mese deve essere compreso tra 1 e 12.");
+      return;
+    }
+
+    // Calcolo giorni massimi per quel mese e anno
+    const maxDays = new Date(y, m, 0).getDate();
+    if (d < 1 || d > maxDays) {
+      setErrorMessage(`Per il mese ${m}/${y} il giorno deve essere compreso tra 1 e ${maxDays}.`);
+      return;
+    }
+
+    // Dati validi: aggiorna lo stato dei calcoli
+    setErrorMessage(null);
+    setDay(d);
+    setMonth(m);
+    setYear(y);
   };
 
   return (
@@ -72,27 +84,77 @@ function App() {
           Sistema predittivo e operativo basato sui quadrati astrologici, Capo Stella e Stella dell'Età.
         </p>
 
-        <div className="flex flex-wrap justify-center gap-4 mt-8">
-          <div className="flex flex-col text-left">
-            <label className="text-xs uppercase tracking-wider text-brand-100/50 mb-1 font-semibold">Giorno</label>
-            <input type="number" min={1} max={maxDaysInMonth} value={day} onChange={handleDayChange} className="bg-brand-800 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-gold-500 w-24 transition-colors" />
-          </div>
-          <div className="flex flex-col text-left">
-            <label className="text-xs uppercase tracking-wider text-brand-100/50 mb-1 font-semibold">Mese</label>
-            <input type="number" min={1} max={12} value={month} onChange={handleMonthChange} className="bg-brand-800 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-gold-500 w-24 transition-colors" />
-          </div>
-          <div className="flex flex-col text-left">
-            <label className="text-xs uppercase tracking-wider text-brand-100/50 mb-1 font-semibold flex items-center gap-1">Anno Nascita
-              <span className="group relative cursor-help">
-                <Info size={12} className="text-gold-500 hover:text-white transition-colors" />
-                <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-brand-900 border border-white/20 text-xs text-brand-100 rounded shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 leading-relaxed text-center">
-                  Attenzione alle divergenze di metà anno: a seconda della tradizione (es. anno solare vs capodanno cinese a febbraio), la Stella dell'anno potrebbe variare.
+        <form onSubmit={handleCalculate} className="space-y-4 mt-8">
+          <div className="flex flex-wrap justify-center items-end gap-4">
+            <div className="flex flex-col text-left">
+              <label className="text-xs uppercase tracking-wider text-brand-100/50 mb-1 font-semibold">Giorno</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="GG"
+                maxLength={2}
+                value={inputDay}
+                onChange={(e) => {
+                  setInputDay(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                className="bg-brand-800 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-gold-500 w-24 text-center font-medium transition-colors"
+              />
+            </div>
+            <div className="flex flex-col text-left">
+              <label className="text-xs uppercase tracking-wider text-brand-100/50 mb-1 font-semibold">Mese</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="MM"
+                maxLength={2}
+                value={inputMonth}
+                onChange={(e) => {
+                  setInputMonth(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                className="bg-brand-800 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-gold-500 w-24 text-center font-medium transition-colors"
+              />
+            </div>
+            <div className="flex flex-col text-left">
+              <label className="text-xs uppercase tracking-wider text-brand-100/50 mb-1 font-semibold flex items-center gap-1">
+                Anno Nascita
+                <span className="group relative cursor-help">
+                  <Info size={12} className="text-gold-500 hover:text-white transition-colors" />
+                  <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-brand-900 border border-white/20 text-xs text-brand-100 rounded shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 leading-relaxed text-center">
+                    Attenzione alle divergenze di metà anno: a seconda della tradizione (es. anno solare vs capodanno cinese a febbraio), la Stella dell'anno potrebbe variare.
+                  </span>
                 </span>
-              </span>
-            </label>
-            <input type="number" min={1} max={currentYear + 100} value={year} onChange={handleYearChange} className="bg-brand-800 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-gold-500 w-32 transition-colors" />
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="AAAA"
+                maxLength={4}
+                value={inputYear}
+                onChange={(e) => {
+                  setInputYear(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                className="bg-brand-800 border border-white/10 rounded-lg px-4 py-2 text-white outline-none focus:border-gold-500 w-32 text-center font-medium transition-colors"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-gradient-to-r from-gold-500 to-yellow-500 hover:from-gold-400 hover:to-yellow-400 text-brand-950 font-bold px-6 py-2 rounded-lg shadow-lg hover:shadow-gold-500/25 transition-all flex items-center gap-2 cursor-pointer h-[42px]"
+            >
+              <Sparkles size={16} />
+              <span>Calcola</span>
+            </button>
           </div>
-        </div>
+
+          {errorMessage && (
+            <div className="flex items-center justify-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 py-2.5 px-4 rounded-lg max-w-md mx-auto">
+              <AlertCircle size={16} className="shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+        </form>
 
         <div className="flex justify-center gap-12 mt-6 pt-6 border-t border-white/5">
            <div><span className="text-brand-100/50 block text-xs uppercase">Età Corrente</span><span className="text-2xl font-light text-gold-500">{currentAge} anni</span></div>
