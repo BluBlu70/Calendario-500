@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/lexend": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
     "lucide-react": "^1.32.0",
     "react": "^19.2.8",
@@ -21,10 +22,12 @@
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
+    "vite-plugin-pwa": "^2.0.0",
     "vitest": "^4.1.11"
   }
 }
